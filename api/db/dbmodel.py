@@ -1,8 +1,8 @@
 import dataset
 import os
 
-mydb = os.environ['IC_DBPassword']+os.environ['IC_Database']
 
+mydb = 'mysql://root:'+os.environ['IC_DBPassword']+'@intercom-db/'+os.environ['IC_Database']
 
 def create_table():
     db = dataset.connect(mydb,engine_kwargs={'pool_recycle': 3600})

@@ -13,7 +13,7 @@ app = FastAPI()
 
 app.mount("/files", StaticFiles(directory="files"), name="static")
 
-mydb = os.environ['IC_DBPassword']+os.environ['IC_Database']
+mydb = 'mysql://root:'+os.environ['IC_DBPassword']+'@intercom-db/'+os.environ['IC_Database']
 
 create_table()
 
