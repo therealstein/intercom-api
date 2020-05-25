@@ -1,11 +1,11 @@
-from fastapi import FastAPI, File, Form, UploadFile, Response
+from fastapi import FastAPI, Depends, Header, HTTPException, File, Form, UploadFile, Response
 from starlette.requests import Request
 from fastapi.staticfiles import StaticFiles
 import dataset
 import datetime
 from pydantic import BaseModel
 import time
-import os
+import tempfile, shutil, os
 from app.db.dbmodel import create_table
 
 
@@ -17,6 +17,19 @@ mydb = 'mysql://root:'+os.environ['IC_DBPassword']+'@intercom-db/'+os.environ['I
 
 create_table()
 
+
+
+class Users(BaseModel):
+    Token: str
+    Role: str
+
+
+
+"""token check"""
+async def verify_token(request: Request, token: str = Header(...)):
+    if not request.state.db['ic_users'].find_one(Token = token):
+        raise HTTPException(status_code=400, detail="X-Token header invalid")
+"""init"""
 
 @app.middleware("http")
 async def add_process_time_header(request: Request, call_next):
@@ -33,29 +46,45 @@ async def add_process_time_header(request: Request, call_next):
 """get routes"""
 
 
-@app.get("/status")
-async def read_status(request: Request):
-    return
 
+@app.get("/list_users", dependencies=[Depends(verify_token)])
+async def list_users(request: Request):
+    result = request.state.db['ic_users'].all()
+    return {'result': [dict(row) for row in result]}
+
+
+@app.get("/list_files", dependencies=[Depends(verify_token)])
+async def list_files(request: Request):
+    result = request.state.db['ic_files'].all()
+    return {'result': [dict(row) for row in result]}
 
 """post routes"""
 
+@app.post("/add_token")
+async def add_usr(request: Request, item: Users):
+    if request.state.db['ic_users'].find_one(Token = item.Token):
+        return {"error": str(item.Token)+' allready exists ...'}
+    tokenid = request.state.db['ic_users'].insert(dict(
+        Token = item.Token,
+        Role = item.Role))
+    return {"id" : tokenid}
 
 
 
-@app.post("/upload_file/")
-async def create_file(request: Request,file: UploadFile = File(...), token: str = Form(...)):
-    if token != token:
-        return {"error": 'bad token   ...'}
+@app.post("/upload_file/", dependencies=[Depends(verify_token)])
+async def create_file(request: Request,file: UploadFile = File(...), token: str = Header(...)):
+    res = request.state.db['ic_users'].find_one(Token = token)
+    user_id = res['id']
     if request.state.db['ic_files'].find_one(Filename = file.filename):
         return {"error": str(file.filename)+' allready exists ...'}
     folder = datetime.datetime.now()
     folder = str(folder.year)+'-'+str(folder.month)+'/'
     upload_folder = "files/"+folder
     request.state.db['ic_files'].insert(dict(
-            s_Folder = upload_folder,
-            s_Filename = file.filename,
-            s_Created = datetime.datetime.now()))
+            Folder = upload_folder,
+            Filename = file.filename,
+            Created = datetime.datetime.now(),
+            Uploaded_by= user_id))
     file_object = file.file
     os.makedirs(os.path.dirname(upload_folder), exist_ok=True)
     upload_folder = open(os.path.join(upload_folder, file.filename), 'wb+')
