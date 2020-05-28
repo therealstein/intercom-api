@@ -33,6 +33,17 @@ services:
     volumes:
       - ./api:/app
       - ./files:/files
+  intercom-chat:
+    container_name: intercom-chat
+    restart: always
+    build: ./builds/intercom-chat/.
+    environment:
+      - TZ=Europe/Berlin
+      - VIRTUAL_HOST=chat.stein.ovh
+      - IC_Database=intercom
+      - IC_DBPassword=my-secret-password
+    volumes:
+      - ./chat:/usr/src/app
 networks:
   default:
     external:

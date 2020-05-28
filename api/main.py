@@ -53,6 +53,11 @@ async def list_users(request: Request):
     return {'result': [dict(row) for row in result]}
 
 
+@app.get("/list_chat", dependencies=[Depends(verify_token)])
+async def list_chat(request: Request):
+    result = request.state.db['ic_chat'].all()
+    return {'result': [dict(row) for row in result]}
+
 @app.get("/list_files", dependencies=[Depends(verify_token)])
 async def list_files(request: Request):
     result = request.state.db['ic_files'].all()
