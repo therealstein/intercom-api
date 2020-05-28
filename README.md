@@ -39,7 +39,7 @@ services:
     build: ./builds/intercom-chat/.
     environment:
       - TZ=Europe/Berlin
-      - VIRTUAL_HOST=chat.stein.ovh
+      - VIRTUAL_HOST=chat.hostname.org
       - IC_Database=intercom
       - IC_DBPassword=my-secret-password
     volumes:
