@@ -17,7 +17,6 @@ db = mysql.createConnection({
   password: pw,
   database: thedb
   }),
-POLLING_INTERVAL = 1500;
 
 
 db.connect(function(err){
@@ -28,30 +27,6 @@ db.connect(function(err){
 	console.log('Database Connection established');
 });
 
-var pollingLoop = function () {
-
-	var query = db.query("SELECT fromid,toid,text,DATE_FORMAT(FROM_UNIXTIME(created), '%d/%m/%Y %H:%i') AS created FROM chat WHERE fromid=1 AND toid=6"),
-		chatter = []; // this array will contain the result of our db query
-
-	query
-		.on('error', function(err) {
-			console.log( err );
-			updateSockets( err );
-		})
-		.on('result', function( chati ) {
-			// create the loop
-			chatter.push( chati );
-		})
-		.on('end',function(){
-			// if sockets connected
-			if(connectionsArray.length) {
-				pollingTimer = setTimeout( pollingLoop, POLLING_INTERVAL );
-				updateSockets({chatter:chatter});
-			}
-		});
-console.log(chatter)
-}
-//require path
 //Server Web Client
 app.get('/', function(req, res){
   res.sendFile(__dirname + '/index.html');
