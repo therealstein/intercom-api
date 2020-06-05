@@ -6,10 +6,11 @@ mydb = 'mysql://root:'+os.environ['IC_DBPassword']+'@intercom-db/'+os.environ['I
 
 def create_table():
     db = dataset.connect(mydb,engine_kwargs={'pool_recycle': 3600})
-    addtable = db['ic_users']
-    addtable.create_column('Token', db.types.string(25))
+    addtable = db['apiKeys']
+    addtable.create_column('Name', db.types.string(25))
+    addtable.create_column('Key', db.types.text)
     addtable.create_column('LastLogin', db.types.datetime)
-    addtable.create_column('Role', db.types.string(6))
+    addtable.create_column('Expiration', db.types.datetime)
 
     addtable2 = db['ic_chat']
     addtable2.create_column('fromid', db.types.string(25))
@@ -23,5 +24,11 @@ def create_table():
     addtable3.create_column('Created', db.types.datetime)
     addtable3.create_column('Uploaded_by', db.types.integer)
 
+    addtable4 = db['ic_file_history']
+    addtable4.create_column('Orig_File', db.types.integer)
+    addtable4.create_column('Filename', db.types.string(100))
+    addtable4.create_column('Folder', db.types.string(100))
+    addtable4.create_column('Created', db.types.datetime)
+    addtable4.create_column('Uploaded_by', db.types.integer)
     db.executable.close()
     return
