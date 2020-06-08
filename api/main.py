@@ -101,14 +101,15 @@ async def create_file(request: Request,file: UploadFile = File(...)):
     folder = datetime.datetime.now()
     folder = str(folder.year)+'-'+str(folder.month)+'/'
     upload_folder = "files/"+folder
+    latest_folder = "files/latest/"
     file_object = file.file
     os.makedirs(os.path.dirname(upload_folder), exist_ok=True)
-    fullpath = os.path.join(upload_folder, file.filename)
+    fullpath = os.path.join(latest_folder, file.filename)
     print(fullpath)
     upload_first = open(fullpath, 'wb+')
     shutil.copyfileobj(file_object, upload_first)
     upload_first.close()
-    hist_filename = str(datetime.datetime.now().strftime("%d-%m-%Y-%H-%M-%S-")) + file.filename
+    hist_filename = str(datetime.datetime.now().strftime("%d-%H-%M-")) + file.filename
     hist_fullpath = os.path.join(upload_folder, hist_filename)
     shutil.copyfile(fullpath,hist_fullpath)
     if not os.path.exists(fullpath) and os.path.exists(hist_fullpath):
@@ -124,11 +125,11 @@ async def create_file(request: Request,file: UploadFile = File(...)):
         return {"file": 'https://'+os.environ['VIRTUAL_HOST']+'/files/'+ folder+ file.filename, "status":"updated"}
     print(file.filename)
     request.state.db['ic_files'].insert(dict(
-            Folder = upload_folder,
+            Folder = latest_folder,
             Filename = file.filename,
             Created = datetime.datetime.now(),
             Uploaded_by= 1))
-    return {"file": 'https://'+os.environ['VIRTUAL_HOST']+'/files/'+ folder+ file.filename, "status":"newfile"}
+    return {"file": 'https://'+os.environ['VIRTUAL_HOST']+'/files/latest'+ file.filename, "status":"newfile"}
 
 """put routes"""
 
