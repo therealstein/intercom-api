@@ -10,22 +10,26 @@ var player = {};
 //create db connection
 pw = process.env.IC_DBPassword;
 thedb = process.env.IC_Database;
-db = mysql.createConnection({
+var pool = mysql.createPool({
   host: "intercom-db",
   port: "3306",
   user: "root",
   password: pw,
   database: thedb
-  }),
+  });
 
 
-db.connect(function(err){
-	if(err){
-		console.log('Error connecting to Db');
-		return;
-	}
-	console.log('Database Connection established');
-});
+//keep alive connection
+
+function keepAlive(){
+  pool.getConnection(function(err, connection){
+    if(err) { return; }
+    connection.ping();
+    connection.release();
+  });
+}
+setInterval(keepAlive, 30000);
+
 
 //Server Web Client
 app.get('/', function(req, res){
@@ -57,8 +61,10 @@ io.on('connection', function(socket){
         io.emit('chat message', msg);
         var timestamp = DATE_FORMATER( new Date(), "yyyy-mm-dd HH:MM:ss" );
     	//write in mysql
-		var newmes  = {fromid:util.inspect(socket.id),toid:util.inspect(socket.id),text: msg,created:timestamp};
-		var query = db.query("INSERT INTO ic_chat SET ?", newmes, function(err, result) {
+        var parts = msg.split('§');
+        var toidc = parts[parts.length - 1];
+		var newmes  = {fromid:util.inspect(socket.id),toid:toidc,text: msg,created:timestamp};
+		var query = pool.query("INSERT INTO ic_chat SET ?", newmes, function(err, result) {
 		//	console.log(query.sql);
 			if(err) {console.log(err);}
 			socket.emit('chat', { text: msg, created:timestamp });
