@@ -30,5 +30,14 @@ def create_table():
     addtable4.create_column('Folder', db.types.string(100))
     addtable4.create_column('Created', db.types.datetime)
     addtable4.create_column('Uploaded_by', db.types.integer)
+
+    addtable5 = db['wiki_users']
+    addtable5.create_column('wiki_id', db.types.integer)
+    addtable5.create_column('email', db.types.string(250))
+    addtable5.create_column('name', db.types.string(250))
+
+    addtable6 = db['wiki_groups']
+    addtable6.create_column('wiki_id', db.types.integer)
+    addtable6.create_column('name', db.types.string(250))
     db.executable.close()
     return
