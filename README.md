@@ -44,6 +44,21 @@ services:
       - IC_DBPassword=my-secret-password
     volumes:
       - ./chat:/usr/src/app
+  intercom-sync:
+    container_name: intercom-sync
+    restart: always
+    build: ./builds/intercom-sync/.
+    environment:
+      - TZ=Europe/Berlin
+      - IC_Database=intercom
+      - IC_DBPassword=my-secret-password
+      - DB_HOST=dbhost
+      - DB_PORT=5432
+      - DB_USER=wikiuser
+      - DB_PASS=wikipass
+      - DB_NAME=wikidb
+    volumes:
+      - ./sync:/app
 networks:
   default:
     external:

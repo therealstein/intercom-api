@@ -39,5 +39,12 @@ def create_table():
     addtable6 = db['wiki_groups']
     addtable6.create_column('wiki_id', db.types.integer)
     addtable6.create_column('name', db.types.string(250))
+
+    addtable7 = db['ic_resources']
+    addtable7.create_column('guid', db.types.integer)
+    addtable7.create_column('category', db.types.string(250))
+    addtable7.create_column('url', db.types.string(2500))
+    addtable7.create_column('project', db.types.string(250))
+
     db.executable.close()
     return

@@ -27,6 +27,15 @@ class apiKeys(BaseModel):
 class getFilename(BaseModel):
     filename: str
 
+class resources(BaseModel):
+    guid: int
+    category: str
+    url: str
+    project: str
+
+class keyid(BaseModel):
+    id: int
+
 """token check"""
 async def verify_token(request: Request, token: str = Header(...)):
     print(token)
@@ -63,6 +72,33 @@ async def list_chat(request: Request):
     result = request.state.db['ic_chat'].all()
     return {'result': [dict(row) for row in result]}
 
+@app.get("/get_users", dependencies=[Depends(verify_token)])
+async def get_users(request: Request):
+    result = request.state.db['wiki_users'].all()
+    return {'result': [dict(row) for row in result]}
+
+@app.get("/get_groups", dependencies=[Depends(verify_token)])
+async def get_groups(request: Request):
+    result = request.state.db['wiki_groups'].all()
+    return {'result': [dict(row) for row in result]}
+
+@app.get("/get_resources", dependencies=[Depends(verify_token)])
+async def get_res(request: Request, item: resources):
+    if item.guid == 0:
+        result = request.state.db['ic_resources'].find(project = item.project)
+    else:
+        result = request.state.db['ic_resources'].find(guid = item.guid)
+    res = []
+    for row in result:
+        res.append({'id':row['id'],
+                'guid':row['guid'],
+                'category':row['category'],
+                'url':row['url'],
+                'project':row['project']
+                })
+    return res
+
+
 @app.get("/get_files", dependencies=[Depends(verify_token)])
 async def get_files(request: Request):
     result = request.state.db['ic_files'].all()
@@ -95,6 +131,22 @@ async def add_apikey(request: Request, item: apiKeys):
     return {"id" : tokenid}"""
 
 
+@app.post("/add_res/", dependencies=[Depends(verify_token)])
+async def add_res(request: Request, item: resources):
+    resid = request.state.db['ic_resources'].insert(dict(
+            guid = item.guid,
+            category = item.category,
+            url = item.url,
+            project = item.project))
+    print(resid)
+    return {"resource added": resid}
+
+@app.post("/del_res/", dependencies=[Depends(verify_token)])
+async def del_res(request: Request, item: keyid):
+    resid = request.state.db['ic_resources'].delete(
+            id = item.id)
+    print(resid)
+    return {"resource removed": resid}
 
 @app.post("/upload_file/", dependencies=[Depends(verify_token)])
 async def create_file(request: Request,file: UploadFile = File(...)):
