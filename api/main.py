@@ -28,7 +28,7 @@ class getFilename(BaseModel):
     filename: str
 
 class resources(BaseModel):
-    guid: int
+    guid: str
     category: str
     url: str
     project: str
@@ -84,7 +84,7 @@ async def get_groups(request: Request):
 
 @app.get("/get_resources", dependencies=[Depends(verify_token)])
 async def get_res(request: Request, item: resources):
-    if item.guid == 0:
+    if item.guid == "0":
         result = request.state.db['ic_resources'].find(project = item.project)
     else:
         result = request.state.db['ic_resources'].find(guid = item.guid)
@@ -98,6 +98,32 @@ async def get_res(request: Request, item: resources):
                 })
     return res
 
+
+@app.get("/get_res_by_guid/{xguid}", dependencies=[Depends(verify_token)])
+async def get_resi_by_guid(request: Request, xguid: str):
+    result = request.state.db['ic_resources'].find(guid = xguid)
+    res = []
+    for row in result:
+        res.append({'id':row['id'],
+                'guid':row['guid'],
+                'category':row['category'],
+                'url':row['url'],
+                'project':row['project']
+                })
+    return res
+
+@app.get("/get_res_by_project/{xproject}", dependencies=[Depends(verify_token)])
+async def get_resi_by_project(request: Request, xproject: str):
+    result = request.state.db['ic_resources'].find(project = xproject)
+    res = []
+    for row in result:
+        res.append({'id':row['id'],
+                'guid':row['guid'],
+                'category':row['category'],
+                'url':row['url'],
+                'project':row['project']
+                })
+    return res
 
 @app.get("/get_files", dependencies=[Depends(verify_token)])
 async def get_files(request: Request):
@@ -183,5 +209,43 @@ async def create_file(request: Request,file: UploadFile = File(...)):
             Uploaded_by= 1))
     return {"file": 'https://'+os.environ['VIRTUAL_HOST']+'/files/latest'+ file.filename, "status":"newfile"}
 
+
+@app.post("/files/", dependencies=[Depends(verify_token)])
+async def create_file(file: bytes = File(...)):
+        return {"file_size": len(file)}
+
+@app.post("/post_ifc/{theproject}", dependencies=[Depends(verify_token)])
+async def post_ifc(request: Request,theproject: str):
+    folder = datetime.datetime.now()
+    folder = str(folder.year)+'-'+str(folder.month)+'/'
+    upload_folder = "files/"+folder
+    latest_folder = "files/latest/"
+    os.makedirs(os.path.dirname(upload_folder), exist_ok=True)
+    fullpath = os.path.join(latest_folder, theproject)
+    print(fullpath)
+    with open(fullpath, 'wb') as up:
+        file_object = await request.body()
+        up.write(file_object)
+    #shutil.copyfileobj(file_object, upload_first)
+    hist_filename = str(datetime.datetime.now().strftime("%d-%H-%M-")) + theproject
+    hist_fullpath = os.path.join(upload_folder, hist_filename)
+    shutil.copyfile(fullpath,hist_fullpath)
+    if not os.path.exists(fullpath) and os.path.exists(hist_fullpath):
+        return {"file": "error while upload"}
+    fileexists = request.state.db['ic_files'].find_one(Filename = theproject)
+    if fileexists is not None:
+        request.state.db['ic_file_history'].insert(dict(
+                Orig_File = fileexists['id'],
+                Folder = upload_folder,
+                Filename = hist_filename,
+                Created = datetime.datetime.now(),
+                Uploaded_by= 1))
+        return {"file": 'https://'+os.environ['VIRTUAL_HOST']+'/'+ upload_folder + hist_filename, "status":"updated"}
+    request.state.db['ic_files'].insert(dict(
+            Folder = latest_folder,
+            Filename = theproject,
+            Created = datetime.datetime.now(),
+            Uploaded_by= 1))
+    return {"file": 'https://'+os.environ['VIRTUAL_HOST']+'/files/latest/'+ theproject, "status":"newfile"}
 """put routes"""
 
